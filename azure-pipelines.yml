@@ -1,0 +1,40 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  jobs:
+  - job: Build
+    steps:
+    - task: UseDotNet@2
+      inputs:
+        packageType: 'sdk'
+        version: '6.x'
+        installationPath: $(Agent.ToolsDirectory)/dotnet
+    - task: Restore@2
+      inputs:
+        projectFile: '**/*.csproj'
+    - task: Build@1
+      inputs:
+        projectFile: '**/*.csproj'
+        arguments: '--configuration Release'
+    - task: Publish@1
+      inputs:
+        projectFile: '**/*.csproj'
+        publishDirectory: '$(Build.ArtifactStagingDirectory)'
+        arguments: '--configuration Release'
+        zipAfterPublish: true
+
+- stage: Deploy
+  jobs:
+  - job: Deploy
+    steps:
+    - task: AzureWebApp@1
+      inputs:
+        azureSubscription: 'Azure Subscription'  # Select the Azure service connection
+        appName: 'YourAppName'  # App Service Name
+        package: '$(System.DefaultWorkingDirectory)/_artifactname/drop/*.zip'
+
